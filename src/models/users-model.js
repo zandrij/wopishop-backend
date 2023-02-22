@@ -21,6 +21,10 @@ const User = sequalize.define("users", {
     },
     state: {
         type: Sequelize.TINYINT
+    },
+    photo: {
+        type: Sequelize.STRING,
+        allowNull: true
     }
 }, { timestamps: false }
 );
@@ -32,7 +36,6 @@ User.beforeUpdate(async (user, options) => {
     }
 });
 
-// Antes de guardar un usuario, cifra su contraseña
 User.beforeCreate((user, options) => {
     return bcrypt.hash(user.password, 10).then((hash) => {
         user.password = hash;
