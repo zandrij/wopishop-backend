@@ -8,6 +8,7 @@ const {
     validCodePassword,
     newPasswordUser
  } = require('../controllers/auth-controller') ;
+const EmailValidator = require('../helpers/email-validator');
 const validateField = require('../middlewares/field-validate');
 const { validateSession } = require('../middlewares/validate-session');
 
@@ -20,7 +21,7 @@ router.post('/register', [
     //last name
     check('lastName', 'lastname is required').isString().notEmpty(),
     // email
-    check('email', 'email is required').notEmpty().isEmail().normalizeEmail().withMessage('email invalid'),
+    check('email', 'email is required').isEmail().normalizeEmail().withMessage('email invalid').custom((value) => EmailValidator(value)),
     // phone
     check('phone', 'phone is required').isString().notEmpty(),
     // password
