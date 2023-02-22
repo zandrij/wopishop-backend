@@ -10,7 +10,8 @@ const port = process.env.PORT || 3000;
 
 app.use(express.json());
 
-app.use("/api", require("./src/api/routes"));
+app.use("/api", require("./src/routes/routes"));
+app.use("/api/auth", require("./src/routes/user-routes"));
 
 app.use("/active-account/:token", [
     param('token', 'invalid token')

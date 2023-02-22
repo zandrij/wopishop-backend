@@ -1,26 +1,20 @@
-const { validationResult } = require("express-validator");
 const User = require("../models/users-model");
 const bcrypt = require('bcrypt');
-const { sendEmail } = require("../api/mailer");
+const { sendEmail } = require("../emails/mailer");
 const { uid } = require("uid");
 const ActiveUser = require("../models/active-model");
 const UserSession = require('../models/user-session-model');
 const dayjs = require("dayjs");
 require('dotenv').config();
 const jwt = require('jsonwebtoken');
-const { RepairPassworEmail } = require("../api/forgot-password");
+const { RepairPassworEmail } = require("../emails/forgot-password");
 const UserPassword = require("../models/user-repair-password");
-const { generateCode } = require("../api/utils");
+const { generateCode } = require("../helpers/utils");
 
 // register user 
 const registerUser = async (req, res) => {
   try {
     const { name, lastName, email, phone, password } = req.body;
-    //validate email
-    const emailValid = await User.findOne({ where: { email }, attributes: ['email'] });
-    if (emailValid) {
-      return res.status(400).json({ error: 'email exiting' });
-    } else {
       //crete user
       const create = await User.create({ name, last_name: lastName, email, phone, password, state: false });
       if (create) {
@@ -31,7 +25,6 @@ const registerUser = async (req, res) => {
       } else {
         return res.status(400).json({ error: 'imposible register user' });
       }
-    }
   } catch (error) {
     return res.status(400).json({ error: 'not posible register' });
   }
@@ -42,12 +35,13 @@ const registerTokenActivation = async (user_id, token, email, res) => {
     let date = dayjs();
     let newDate = date.add(1, 'day');
 
-    const activationSave = ActiveUser.create({ user_id, token, expired_at: newDate });
+    const activationSave = await ActiveUser.create({ user_id, token, expired_at: newDate });
 
     if (activationSave) {
-      await sendEmail(email, token).then(async () => {
-        return res.status(200).json({ succes: 'email send' });
-      })
+      await sendEmail(email, token)
+        .then(async () => {
+          return res.status(200).json({ succes: 'email send' });
+        })
         .catch(() => {
           return res.status(400).json({ error: 'email confirmation no send, resend' });
         })
@@ -214,7 +208,11 @@ const validCodePassword = async (req, res) => {
 
     //remove code 
     await validCode.destroy();
-    await createSession(validUser.dataValues, res);
+
+    let newUser = { ...validUser.dataValues };
+    delete newUser.password;
+
+    await createSession(newUser, res);
 
   } catch (error) {
     return res.status(400).json({ error: 'not posible validate code' });
